@@ -1,691 +1,604 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Early Warning Disaster Sensor Network Simulation</title>
-    <style>
-        :root {
-            --bg-dark: #0f172a;
-            --panel-bg: #1e293b;
-            --border-color: #334155;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --accent-blue: #38bdf8;
-            --accent-green: #22c55e;
-            --accent-amber: #f59e0b;
-            --accent-red: #ef4444;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Early Warning Disaster Network Simulation</title>
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --panel-bg: #1e293b;
+      --border: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --safe: #22c55e;
+      --alert: #ef4444;
+      --warning: #f59e0b;
+    }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
 
-        body {
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
 
-        header {
-            background-color: var(--panel-bg);
-            border-bottom: 1px solid var(--border-color);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
+    header {
+      background: #020617;
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
 
-        header h1 {
-            font-size: 1.25rem;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
+    header h1 {
+      font-size: 1.35rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
 
-        .status-badge {
-            font-size: 0.8rem;
-            padding: 0.25rem 0.75rem;
-            border-radius: 999px;
-            background-color: rgba(34, 197, 94, 0.15);
-            color: var(--accent-green);
-            border: 1px solid var(--accent-green);
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
+    .status-pill {
+      background: rgba(34, 197, 94, 0.15);
+      color: var(--safe);
+      border: 1px solid var(--safe);
+      padding: 0.35rem 0.9rem;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
 
-        .status-badge.alert {
-            background-color: rgba(239, 68, 68, 0.2);
-            color: var(--accent-red);
-            border-color: var(--accent-red);
-            animation: pulse 1s infinite;
-        }
+    .status-pill.danger {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      border-color: var(--alert);
+      animation: pulse-border 1.2s infinite;
+    }
 
-        /* Disaster Trigger Controls */
-        .controls-bar {
-            background-color: #162032;
-            padding: 0.75rem 2rem;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-        }
+    @keyframes pulse-border {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+      50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+    }
 
-        .controls-label {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            font-weight: 600;
-            text-transform: uppercase;
-            margin-right: 0.5rem;
-        }
+    main {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 1.5rem;
+      padding: 1.5rem 2rem;
+      flex: 1;
+    }
 
-        button.sim-btn {
-            background-color: var(--panel-bg);
-            color: var(--text-main);
-            border: 1px solid var(--border-color);
-            padding: 0.45rem 0.9rem;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-        }
+    @media (max-width: 960px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
 
-        button.sim-btn:hover {
-            border-color: var(--accent-blue);
-            background-color: #26354d;
-        }
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
 
-        button.sim-btn.active {
-            background-color: rgba(239, 68, 68, 0.25);
-            border-color: var(--accent-red);
-            color: #fca5a5;
-        }
+    .card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
 
-        button.reset-btn {
-            margin-left: auto;
-            background-color: rgba(56, 189, 248, 0.15);
-            border-color: var(--accent-blue);
-            color: var(--accent-blue);
-        }
+    .card h2 {
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
 
-        /* Main Layout */
-        .workspace {
-            display: grid;
-            grid-template-columns: 1fr 380px;
-            flex: 1;
-        }
+    .trigger-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.6rem;
+    }
 
-        @media (max-width: 960px) {
-            .workspace {
-                grid-template-columns: 1fr;
-            }
-        }
+    button {
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: #0f172a;
+      color: var(--text-main);
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+    }
 
-        /* Interactive Environment Canvas */
-        .map-container {
-            position: relative;
-            width: 100%;
-            min-height: 560px;
-            background: linear-gradient(180deg, 
-                #030712 0%,      /* Space / LEO */
-                #0c192c 24%,     /* Upper Atmosphere */
-                #1e3a5f 38%,     /* Horizon Sky */
-                #14532d 39%,     /* Forest / Land */
-                #3f2e21 68%,     /* Underground / Crust */
-                #0c4a6e 69%,     /* Ocean Surface */
-                #041d2e 100%     /* Deep Ocean Floor */
-            );
-            overflow: hidden;
-            user-select: none;
-        }
+    button:hover {
+      border-color: var(--accent);
+      background: #1e293b;
+    }
 
-        .zone-label {
-            position: absolute;
-            left: 14px;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: rgba(255, 255, 255, 0.45);
-            pointer-events: none;
-            font-weight: 700;
-        }
+    button.active-disaster {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: var(--alert);
+      color: #fecaca;
+    }
 
-        /* SVG Terrain & Signal Lines */
-        svg.scene-svg {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-        }
+    button.reset-btn {
+      margin-top: 0.5rem;
+      background: #334155;
+      justify-content: center;
+      font-weight: 600;
+    }
 
-        .signal-line {
-            stroke: var(--accent-blue);
-            stroke-width: 2;
-            stroke-dasharray: 6 6;
-            opacity: 0.35;
-            fill: none;
-            transition: all 0.3s;
-        }
+    button.reset-btn:hover {
+      background: #475569;
+    }
 
-        .signal-line.transmitting {
-            stroke: var(--accent-red);
-            stroke-width: 3.5;
-            opacity: 1;
-            animation: dashFlow 0.6s linear infinite;
-        }
+    .inspector-box h3 {
+      font-size: 1.2rem;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
 
-        @keyframes dashFlow {
-            to {
-                stroke-dashoffset: -12;
-            }
-        }
+    .tag-row {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.85rem;
+    }
 
-        /* Sensor Nodes */
-        .sensor-node {
-            position: absolute;
-            transform: translate(-50%, -50%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: pointer;
-            z-index: 10;
-            transition: transform 0.2s;
-        }
+    .tag {
+      font-size: 0.75rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
 
-        .sensor-node:hover {
-            transform: translate(-50%, -50%) scale(1.1);
-        }
+    .inspector-box p {
+      font-size: 0.95rem;
+      line-height: 1.5;
+      color: #e2e8f0;
+    }
 
-        .node-icon {
-            width: 46px;
-            height: 46px;
-            border-radius: 50%;
-            background-color: var(--panel-bg);
-            border: 2px solid var(--accent-blue);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.35rem;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            position: relative;
-        }
+    /* Interactive Map Viewport */
+    .viewport-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
 
-        .sensor-node.selected .node-icon {
-            border-color: #ffffff;
-            box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.45);
-        }
+    .map-container {
+      position: relative;
+      width: 100%;
+      height: 460px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: linear-gradient(
+        180deg,
+        #020617 0%,
+        #0c4a6e 26%,
+        #1e3a8a 26.5%,
+        #065f46 58%,
+        #78350f 85%,
+        #451a03 100%
+      );
+    }
 
-        .sensor-node.triggered .node-icon {
-            border-color: var(--accent-red);
-            background-color: #450a0a;
-            animation: pulse 0.8s infinite;
-        }
+    /* Environment Labels */
+    .zone-label {
+      position: absolute;
+      left: 14px;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: rgba(255, 255, 255, 0.55);
+      pointer-events: none;
+      font-weight: 700;
+    }
 
-        .node-tag {
-            margin-top: 6px;
-            background-color: rgba(15, 23, 42, 0.9);
-            border: 1px solid var(--border-color);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            white-space: nowrap;
-        }
+    /* SVG Signal Layer */
+    #signal-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
 
-        .sensor-node.triggered .node-tag {
-            border-color: var(--accent-red);
-            color: #fca5a5;
-        }
+    .signal-line {
+      stroke: rgba(56, 189, 248, 0.25);
+      stroke-width: 2;
+      stroke-dasharray: 6 6;
+    }
 
-        /* Right Side Inspector & Telemetry Panel */
-        .sidebar {
-            background-color: var(--panel-bg);
-            border-left: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
+    .signal-line.transmitting {
+      stroke: #ef4444;
+      stroke-width: 3.5;
+      stroke-dasharray: 10 6;
+      animation: dash-flow 0.6s linear infinite;
+    }
 
-        .inspector {
-            padding: 1.5rem;
-        }
+    @keyframes dash-flow {
+      to { stroke-dashoffset: -16; }
+    }
 
-        .inspector-header {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            margin-bottom: 1rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--border-color);
-        }
+    /* Sensor Nodes */
+    .node {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      background: rgba(15, 23, 42, 0.92);
+      border: 2px solid var(--accent);
+      border-radius: 10px;
+      padding: 0.45rem 0.7rem;
+      cursor: pointer;
+      text-align: center;
+      min-width: 125px;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      z-index: 10;
+    }
 
-        .inspector-icon {
-            font-size: 2rem;
-            background: var(--bg-dark);
-            width: 54px;
-            height: 54px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-        }
+    .node:hover, .node.selected {
+      transform: translate(-50%, -50%) scale(1.07);
+      border-color: #ffffff;
+      box-shadow: 0 0 18px rgba(56, 189, 248, 0.5);
+      z-index: 20;
+    }
 
-        .inspector-title h2 {
-            font-size: 1.15rem;
-            color: var(--text-main);
-        }
+    .node.alert-node {
+      border-color: var(--alert);
+      background: rgba(127, 29, 29, 0.95);
+      animation: shake 0.4s infinite;
+    }
 
-        .inspector-title span {
-            font-size: 0.8rem;
-            color: var(--accent-blue);
-            font-weight: 600;
-        }
+    .node.base-active {
+      border-color: var(--warning);
+      box-shadow: 0 0 24px rgba(245, 158, 11, 0.7);
+    }
 
-        .detail-group {
-            margin-bottom: 1.1rem;
-        }
+    @keyframes shake {
+      0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+      25% { transform: translate(-52%, -50%) rotate(-2deg); }
+      75% { transform: translate(-48%, -50%) rotate(2deg); }
+    }
 
-        .detail-label {
-            font-size: 0.72rem;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            color: var(--text-muted);
-            margin-bottom: 0.25rem;
-            font-weight: 700;
-        }
+    .node-icon {
+      font-size: 1.35rem;
+      display: block;
+      margin-bottom: 2px;
+    }
 
-        .detail-value {
-            font-size: 0.92rem;
-            line-height: 1.45;
-            color: #e2e8f0;
-        }
+    .node-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      display: block;
+    }
 
-        .disaster-pill {
-            display: inline-block;
-            padding: 0.25rem 0.65rem;
-            border-radius: 4px;
-            background-color: rgba(245, 158, 11, 0.15);
-            border: 1px solid var(--accent-amber);
-            color: #fcd34d;
-            font-size: 0.82rem;
-            font-weight: 600;
-        }
+    .node-sub {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+    }
 
-        /* Live Telemetry Waveform / Readout */
-        .telemetry-box {
-            background-color: var(--bg-dark);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 0.85rem;
-            margin-top: 1rem;
-        }
+    /* Live Feed Log */
+    .log-box {
+      background: #020617;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      height: 150px;
+      overflow-y: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.85rem;
+    }
 
-        .telemetry-row {
-            display: flex;
-            justify-content: space-between;
-            font-family: monospace;
-            font-size: 0.85rem;
-            margin-bottom: 0.4rem;
-        }
+    .log-entry {
+      margin-bottom: 0.4rem;
+      line-height: 1.4;
+    }
 
-        .telemetry-val {
-            color: var(--accent-green);
-            font-weight: bold;
-        }
+    .log-time { color: var(--text-muted); }
+    .log-alert { color: #f87171; font-weight: 600; }
+    .log-info { color: var(--accent); }
+    .log-ok { color: var(--safe); }
+  </style>
+</head>
+<body>
 
-        .telemetry-val.danger {
-            color: var(--accent-red);
-        }
+  <header>
+    <h1>📡 Disaster Early Warning Network Simulation</h1>
+    <div id="system-status" class="status-pill">● SYSTEM NOMINAL — ALL SENSORS MONITORING</div>
+  </header>
 
-        /* Event Log Terminal */
-        .log-panel {
+  <main>
+    <!-- Left Controls & Details -->
+    <aside class="sidebar">
+      <div class="card">
+        <h2>1. Simulate Disaster Event</h2>
+        <div class="trigger-grid">
+          <button onclick="triggerDisaster('earthquake', this)">
+            <span>🌋 Trigger Earthquake</span>
+            <span>→</span>
+          </button>
+          <button onclick="triggerDisaster('tsunami', this)">
+            <span>🌊 Trigger Undersea Quake</span>
+            <span>→</span>
+          </button>
+          <button onclick="triggerDisaster('flood', this)">
+            <span>🌧️ Trigger River Surge</span>
+            <span>→</span>
+          </button>
+          <button onclick="triggerDisaster('bushfire', this)">
+            <span>🔥 Trigger Forest Heat/Smoke</span>
+            <span>→</span>
+          </button>
+          <button onclick="triggerDisaster('volcano', this)">
+            <span>⛰️ Trigger Magma Rise</span>
+            <span>→</span>
+          </button>
+          <button class="reset-btn" onclick="resetSimulation()">↺ Reset All Sensors</button>
+        </div>
+      </div>
+
+      <div class="card inspector-box" id="inspector">
+        <h2>2. Equipment Inspector</h2>
+        <h3 id="insp-name">Base Station</h3>
+        <div class="tag-row">
+          <span class="tag" id="insp-location">📍 Ground / Earth</span>
+          <span class="tag" id="insp-disaster">⚠️ Any Disaster</span>
+        </div>
+        <p id="insp-how">
+          Uses a combination of signals that come through the internet, direct cables, or satellites to receive and process data.
+        </p>
+      </div>
+    </aside>
+
+    <!-- Right Interactive Environment & Telemetry Log -->
+    <section class="viewport-wrapper">
+      <div class="map-container" id="map">
+        <span class="zone-label" style="top: 10px;">Low Earth Orbit (Space)</span>
+        <span class="zone-label" style="top: 130px;">Deep Ocean & Waterways</span>
+        <span class="zone-label" style="top: 275px;">Forests, Volcano Slopes & Ground</span>
+
+        <svg id="signal-svg"></svg>
+        <!-- Nodes injected via JavaScript -->
+      </div>
+
+      <div class="card">
+        <h2>3. Live Base Station Telemetry Log</h2>
+        <div class="log-box" id="log-box">
+          <div class="log-entry">
+            <span class="log-time">[BOOT]</span> <span class="log-ok">All 7 sensor nodes online and linked to Base Station. Click any node to inspect or trigger a disaster on the left.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const equipmentData = [
+      {
+        id: "satellite",
+        name: "Satellite",
 Use code with caution.
-border-top: 1px solid var(--border-color);
-background-color: #0b1120;
-padding: 1rem 1.5rem;
-height: 210px;
-display: flex;
-flex-direction: column;
-}
-.log-title {
-font-size: 0.75rem;
-text-transform: uppercase;
-color: var(--text-muted);
-letter-spacing: 0.8px;
-margin-bottom: 0.5rem;
-font-weight: 700;
-}
-.log-feed {
-flex: 1;
-overflow-y: auto;
-font-family: monospace;
-font-size: 0.8rem;
-display: flex;
-flex-direction: column;
-gap: 0.4rem;
-}
-.log-entry {
-line-height: 1.35;
-color: #cbd5e1;
-}
-.log-entry.alert {
-color: #f87171;
-}
-.log-entry.info {
-color: #38bdf8;
-}
-@keyframes pulse {
-0%, 100% { transform: scale(1); }
-50% { transform: scale(1.08); }
-}
-.shake-anim {
-animation: screenShake 0.4s infinite;
-}
-@keyframes screenShake {
-0% { transform: translate(0, 0); }
-25% { transform: translate(-3px, 2px); }
-50% { transform: translate(3px, -2px); }
-75% { transform: translate(-2px, -2px); }
-100% { transform: translate(0, 0); }
-}
-
-
-📡 Early Warning Disaster Monitoring Network
-● ALL SYSTEMS NOMINAL
-Simulate Hazard:
-🌍 Earthquake
-🔥 Bushfire
-🌊 River Flood
-🌋 Volcanic Eruption
-🌊 Tsunami
-↺ Clear Alerts
-Low Earth Orbit (Space)
-Terrestrial & Forest Surface
-Subsurface / Earth Crust
-Rivers & Deep Ocean
-🛰️
-Satellite
-🌋
-Gas & Tilt Spectrometer
-🏢
-Base Station
-🌡️
-Remote Weather Station
-📉
-Seismometer
-🌊
-Stream Gauge
-⚓
-DART Tsunami Buoy
-
-🏢
-
-Base Station
-📍 Ground / Earth
-
-Target Disaster
-Any
-How It Works
-
-Uses a combination of signals that come through the internet, direct cables, or satellites to receive and process data.
-
-Live Sensor Telemetry
-
-Active Uplinks:
-6 / 6 ONLINE
-
-
-Packet Latency:
-42 ms
-
-
-Alert State:
-MONITORING
-
-
-Base Station Signal & Alert Log
-
-[SYSTEM] Network initialized. Click any node on the map to inspect its mechanism.
-[BASE STATION] Receiving nominal telemetry via fiber, internet, and LEO satellite links.
-
-
-
-const sensors = {
-base: {
-id: 'base',
-name: 'Base Station',
-icon: '🏢',
-location: 'Ground / Earth',
-disaster: 'Any',
-how: 'Uses a combination of signals that come through the internet, direct cables, or satellites to receive and process data.',
-normalTelemetry: [
-['Active Uplinks:', '6 / 6 ONLINE'],
-['Processing Load:', '18% Nominal'],
-['Alert State:', 'MONITORING']
-],
-alertTelemetry: [
-['Incoming Alerts:', 'CRITICAL PRIORITY'],
-['Broadcast Status:', 'PUBLIC WARNING SENT'],
-['Alert State:', 'EMERGENCY ACTIVE']
-]
+icon: "🛰️",
+location: "Low Earth Orbit",
+disaster: "Any",
+x: 50,
+y: 13,
+how: "Detects ground shifts from space, uses weather tools like synoptic charts for heatwaves and bushfires, and pairs AI with imagery to spot abnormalities."
 },
-seismometer: {
-id: 'seismometer',
-name: 'Seismometer',
-icon: '📉',
-location: 'Ground / Earth',
-disaster: 'Earthquakes',
-how: 'Has a suspended weight and pen (or digital sensor) that moves when the ground shakes to record seismic waves.',
-normalTelemetry: [
-['Ground Velocity:', '0.02 mm/s'],
-['P-Wave / S-Wave:', '0.1 Richter'],
-['Sensor Status:', 'CALIBRATED']
-],
-alertTelemetry: [
-['Ground Velocity:', '148.5 mm/s (SEVERE)'],
-['Seismic Magnitude:', '6.8 Mw DETECTED'],
-['Sensor Status:', 'WAVE SPIKE LOGGED']
-]
+{
+id: "buoy",
+name: "DART Tsunami Buoy",
+icon: "🛟",
+location: "Deep Ocean",
+disaster: "Floods / Tsunamis",
+x: 18,
+y: 42,
+how: "Sits on the ocean floor to feel sudden water pressure changes from undersea quakes, then relays alerts to a surface buoy."
 },
-satellite: {
-id: 'satellite',
-name: 'Satellite',
-icon: '🛰️',
-location: 'Low Earth Orbit',
-disaster: 'Any',
-how: 'Detects ground shifts from space, uses weather tools like synoptic charts for heatwaves and bushfires, and pairs AI with imagery to spot abnormalities.',
-normalTelemetry: [
-['Orbit Altitude:', '540 km LEO'],
-['AI Vision Scan:', 'No Anomalies'],
-['Synoptic Chart:', 'Stable Pressure']
-],
-alertTelemetry: [
-['AI Vision Scan:', 'ABNORMALITY FLAGGED'],
-['Thermal / Shift:', 'THRESHOLD EXCEEDED'],
-['Downlink:', 'STREAMING TO BASE']
-]
+{
+id: "gauge",
+name: "Stream Gauge",
+icon: "📏",
+location: "Rivers / Waterways",
+disaster: "Floods",
+x: 78,
+y: 43,
+how: "Uses radar, sonar, or pressure sensors in rivers and creeks to track rising water levels and flow speed."
 },
-stream: {
-id: 'stream',
-name: 'Stream Gauge',
-icon: '🌊',
-location: 'Rivers / Waterways',
-disaster: 'Floods',
-how: 'Uses radar, sonar, or pressure sensors in rivers and creeks to track rising water levels and flow speed.',
-normalTelemetry: [
-['Water Level:', '1.42 meters'],
-['Flow Velocity:', '0.8 m/s'],
-['Radar/Sonar:', 'NORMAL FLOW']
-],
-alertTelemetry: [
-['Water Level:', '5.85 meters (OVERFLOW)'],
-['Flow Velocity:', '4.9 m/s (SURGE)'],
-['Radar/Sonar:', 'FLASH FLOOD ALERT']
-]
+{
+id: "weather",
+name: "Remote Weather Station",
+icon: "🌡️",
+location: "Forests / Bushland",
+disaster: "Bushfires",
+x: 16,
+y: 76,
+how: "Measures temperature, humidity, and wind speed, while using thermal cameras or smoke sensors to spot early fire conditions."
 },
-weather: {
-id: 'weather',
-name: 'Remote Weather Station',
-icon: '🌡️',
-location: 'Forests / Bushland',
-disaster: 'Bushfires',
-how: 'Measures temperature, humidity, and wind speed, while using thermal cameras or smoke sensors to spot early fire conditions.',
-normalTelemetry: [
-['Temp / Humidity:', '24°C / 52% RH'],
-['Wind Speed:', '12 km/h NW'],
-['Thermal / Smoke:', 'CLEAR']
-],
-alertTelemetry: [
-['Temp / Humidity:', '43°C / 9% RH'],
-['Wind Speed:', '68 km/h GUSTS'],
-['Thermal / Smoke:', 'SMOKE & HEAT PLUME']
-]
+{
+id: "seismometer",
+name: "Seismometer",
+icon: "📈",
+location: "Ground / Earth",
+disaster: "Earthquakes",
+x: 38,
+y: 84,
+how: "Has a suspended weight and pen (or digital sensor) that moves when the ground shakes to record seismic waves."
 },
-volcano: {
-id: 'volcano',
-name: 'Gas & Tilt Spectrometer',
-icon: '🌋',
-location: 'Volcano Slopes',
-disaster: 'Volcanic Eruptions',
-how: 'Sniffs volcanic vents for sulfur dioxide spikes and measures tiny swelling on volcano slopes caused by rising magma.',
-normalTelemetry: [
-['Sulfur Dioxide:', '45 ppm (Baseline)'],
-['Slope Tilt:', '0.2 microradians'],
-['Magma Pressure:', 'STABLE']
-],
-alertTelemetry: [
-['Sulfur Dioxide:', '1,420 ppm (SPIKE)'],
-['Slope Tilt:', '48.6 microradians'],
-['Magma Pressure:', 'RAPID UPLIFT']
-]
+{
+id: "volcano",
+name: "Gas & Tilt Spectrometer",
+icon: "🧪",
+location: "Volcano Slopes",
+disaster: "Volcanic Eruptions",
+x: 62,
+y: 75,
+how: "Sniffs volcanic vents for sulfur dioxide spikes and measures tiny swelling on volcano slopes caused by rising magma."
+},
+{
+id: "base",
+name: "Base Station",
+icon: "🏢",
+location: "Ground / Earth",
+disaster: "Any",
+x: 84,
+y: 82,
+how: "Uses a combination of signals that come through the internet, direct cables, or satellites to receive and process data."
+}
+];
+// Define network links between nodes
+const connections = [
+{ from: "buoy", to: "satellite" },
+{ from: "satellite", to: "base" },
+{ from: "weather", to: "satellite" },
+{ from: "weather", to: "base" },
+{ from: "seismometer", to: "base" },
+{ from: "volcano", to: "base" },
+{ from: "gauge", to: "base" }
+];
+const scenarios = {
+earthquake: {
+title: "EARTHQUAKE DETECTED",
+activeNodes: ["seismometer", "satellite"],
+activeLinks: ["seismometer-base", "satellite-base"],
+message: "Seismometer suspended weight recorded rapid P-waves & S-waves. Satellite verifying ground shift via radar."
 },
 tsunami: {
-id: 'tsunami',
-name: 'DART Tsunami Buoy',
-icon: '⚓',
-location: 'Deep Ocean',
-disaster: 'Floods / Tsunamis',
-how: 'Sits on the ocean floor to feel sudden water pressure changes from undersea quakes, then relays alerts to a surface buoy.',
-normalTelemetry: [
-['Seafloor Depth:', '4,210.00 m'],
-['Pressure Variance:', '±0.01 kPa'],
-['Acoustic Relay:', 'STANDBY']
-],
-alertTelemetry: [
-['Water Column Shift:', '+1.85 m PULSE'],
-['Pressure Spike:', '+18.4 kPa SUDDEN'],
-['Surface Buoy:', 'SATELLITE RELAYING']
-]
+title: "TSUNAMI WARNING",
+activeNodes: ["buoy", "seismometer", "satellite"],
+activeLinks: ["buoy-satellite", "satellite-base", "seismometer-base"],
+message: "DART Tsunami Buoy felt sudden deep-ocean water pressure spike! Relayed via surface buoy -> Satellite -> Base Station."
+},
+flood: {
+title: "FLASH FLOOD ALERT",
+activeNodes: ["gauge"],
+activeLinks: ["gauge-base"],
+message: "Stream Gauge radar & sonar detected rapid river water rise and high flow velocity. Direct alert sent to Base Station."
+},
+bushfire: {
+title: "BUSHFIRE EMERGENCY",
+activeNodes: ["weather", "satellite"],
+activeLinks: ["weather-base", "weather-satellite", "satellite-base"],
+message: "Remote Weather Station thermal camera spotted smoke & low humidity. Satellite AI imagery confirmed heat anomaly."
+},
+volcano: {
+title: "VOLCANIC ERUPTION IMMINENT",
+activeNodes: ["volcano", "seismometer"],
+activeLinks: ["volcano-base", "seismometer-base"],
+message: "Gas & Tilt Spectrometer detected sulfur dioxide spike and slope swelling from rising magma."
 }
 };
-let selectedSensorId = 'base';
-let activeTriggeredSensors = new Set();
-function selectSensor(id) {
-selectedSensorId = id;
-document.querySelectorAll('.sensor-node').forEach(node => {
-node.classList.remove('selected');
+const mapEl = document.getElementById("map");
+const svgEl = document.getElementById("signal-svg");
+const logBox = document.getElementById("log-box");
+const statusPill = document.getElementById("system-status");
+function initMap() {
+// Draw SVG lines
+connections.forEach(conn => {
+const fromNode = equipmentData.find(e => e.id === conn.from);
+const toNode = equipmentData.find(e => e.id === conn.to);
+const line = document.createElementNS("w3.org", "line");
+line.setAttribute("x1", ${fromNode.x}%);
+line.setAttribute("y1", ${fromNode.y}%);
+line.setAttribute("x2", ${toNode.x}%);
+line.setAttribute("y2", ${toNode.y}%);
+line.setAttribute("class", "signal-line");
+line.setAttribute("id", link-${conn.from}-${conn.to});
+svgEl.appendChild(line);
 });
-document.getElementById('node-' + id).classList.add('selected');
-renderInspector();
-}
-function renderInspector() {
-const s = sensors[selectedSensorId];
-const isAlert = activeTriggeredSensors.has(selectedSensorId);
-document.getElementById('inspIcon').textContent = s.icon;
-document.getElementById('inspName').textContent = s.name;
-document.getElementById('inspLocation').textContent = '📍 ' + s.location;
-document.getElementById('inspDisaster').textContent = s.disaster;
-document.getElementById('inspHow').textContent = s.how;
-const telData = isAlert ? s.alertTelemetry : s.normalTelemetry;
-for (let i = 0; i < 3; i++) {
-document.getElementById(telMetric${i+1}Label).textContent = telData[i][0];
-const valEl = document.getElementById(telMetric${i+1}Val);
-valEl.textContent = telData[i][1];
-valEl.className = isAlert ? 'telemetry-val danger' : 'telemetry-val';
-}
-}
-function addLog(message, type = '') {
-const feed = document.getElementById('logFeed');
-const entry = document.createElement('div');
-const time = new Date().toLocaleTimeString([], { hour12: false });
-entry.className = log-entry ${type};
-entry.textContent = [${time}] ${message};
-feed.prepend(entry);
-}
-function triggerDisaster(type, btnElement) {
-resetSimulation(false);
-btnElement.classList.add('active');
-const statusBadge = document.getElementById('systemStatus');
-statusBadge.textContent = '⚠ EMERGENCY ALERT ACTIVE';
-statusBadge.classList.add('alert');
-const map = document.getElementById('mapContainer');
-let triggeredList = [];
-let focusSensor = 'base';
-let alertMessage = '';
-if (type === 'earthquake') {
-triggeredList = ['seismometer', 'satellite', 'base'];
-focusSensor = 'seismometer';
-alertMessage = 'SEISMOMETER detected strong P/S waves! Satellite confirms ground shift. Base Station issuing Earthquake alert.';
-map.classList.add('shake-anim');
-setTimeout(() => map.classList.remove('shake-anim'), 1600);
-} else if (type === 'bushfire') {
-triggeredList = ['weather', 'satellite', 'base'];
-focusSensor = 'weather';
-alertMessage = 'REMOTE WEATHER STATION detected smoke & high heat! Satellite AI & synoptic charts confirm fire spread.';
-} else if (type === 'flood') {
-triggeredList = ['stream', 'satellite', 'base'];
-focusSensor = 'stream';
-alertMessage = 'STREAM GAUGE radar/sonar recorded rapid river surge! Base Station broadcasting Flood warning.';
-} else if (type === 'volcano') {
-triggeredList = ['volcano', 'seismometer', 'satellite', 'base'];
-focusSensor = 'volcano';
-alertMessage = 'GAS & TILT SPECTROMETER detected sulfur dioxide spike and slope swelling! Magma rising.';
-} else if (type === 'tsunami') {
-triggeredList = ['tsunami', 'seismometer', 'satellite', 'base'];
-focusSensor = 'tsunami';
-alertMessage = 'DART TSUNAMI BUOY felt sudden seafloor pressure spike! Acoustic signal relayed via surface buoy & satellite to Base Station.';
-map.classList.add('shake-anim');
-setTimeout(() => map.classList.remove('shake-anim'), 1000);
-}
-triggeredList.forEach(id => {
-activeTriggeredSensors.add(id);
-const node = document.getElementById('node-' + id);
-if (node) node.classList.add('triggered');
-const line = document.getElementById('line-' + id);
-if (line) line.classList.add('transmitting');
+// Draw sensor nodes
+equipmentData.forEach(item => {
+const div = document.createElement("div");
+div.className = "node";
+div.id = node-${item.id};
+div.style.left = ${item.x}%;
+div.style.top = ${item.y}%;
+div.innerHTML = <span class="node-icon">${item.icon}</span> <span class="node-title">${item.name}</span> <span class="node-sub">${item.location}</span>;
+div.onclick = () => inspectEquipment(item.id);
+mapEl.appendChild(div);
 });
-selectSensor(focusSensor);
-addLog(alertMessage, 'alert');
+inspectEquipment("base");
 }
-function resetSimulation(logReset = true) {
-activeTriggeredSensors.clear();
-document.querySelectorAll('.sim-btn').forEach(b => b.classList.remove('active'));
-document.querySelectorAll('.sensor-node').forEach(n => n.classList.remove('triggered'));
-document.querySelectorAll('.signal-line').forEach(l => l.classList.remove('transmitting'));
-const statusBadge = document.getElementById('systemStatus');
-statusBadge.textContent = '● ALL SYSTEMS NOMINAL';
-statusBadge.classList.remove('alert');
-renderInspector();
-if (logReset) {
-addLog('All alerts cleared. Sensors returned to normal monitoring state.', 'info');
+function inspectEquipment(id) {
+const item = equipmentData.find(e => e.id === id);
+if (!item) return;
+document.querySelectorAll(".node").forEach(n => n.classList.remove("selected"));
+document.getElementById(node-${id}).classList.add("selected");
+document.getElementById("insp-name").textContent = ${item.icon} ${item.name};
+document.getElementById("insp-location").textContent = 📍 ${item.location};
+document.getElementById("insp-disaster").textContent = ⚠️ ${item.disaster};
+document.getElementById("insp-how").textContent = item.how;
 }
+function triggerDisaster(type, btnEl) {
+resetVisuals();
+const scenario = scenarios[type];
+if (!scenario) return;
+if (btnEl) btnEl.classList.add("active-disaster");
+// Update top status banner
+statusPill.textContent = 🚨 ALERT: ${scenario.title};
+statusPill.classList.add("danger");
+// Highlight active sensors
+scenario.activeNodes.forEach(nodeId => {
+const el = document.getElementById(node-${nodeId});
+if (el) el.classList.add("alert-node");
+});
+// Highlight Base Station receiving data
+document.getElementById("node-base").classList.add("base-active");
+// Animate signal lines
+scenario.activeLinks.forEach(linkId => {
+const line = document.getElementById(link-${linkId});
+if (line) line.classList.add("transmitting");
+});
+// Inspect primary sensor automatically
+inspectEquipment(scenario.activeNodes[0]);
+// Append to telemetry log
+addLog([${scenario.title}], scenario.message, "log-alert");
 }
-// Initialize view
-renderInspector();
+function resetVisuals() {
+document.querySelectorAll(".node").forEach(n => {
+n.classList.remove("alert-node", "base-active");
+});
+document.querySelectorAll(".signal-line").forEach(l => {
+l.classList.remove("transmitting");
+});
+document.querySelectorAll(".trigger-grid button").forEach(b => {
+b.classList.remove("active-disaster");
+});
+}
+function resetSimulation() {
+resetVisuals();
+statusPill.textContent = "● SYSTEM NOMINAL — ALL SENSORS MONITORING";
+statusPill.classList.remove("danger");
+inspectEquipment("base");
+addLog("[RESET]", "Simulation cleared. All monitoring stations returned to normal standby mode.", "log-ok");
+}
+function addLog(tag, text, className) {
+const now = new Date().toLocaleTimeString();
+const entry = document.createElement("div");
+entry.className = "log-entry";
+entry.innerHTML = <span class="log-time">[${now}]</span> <span class="${className}">${tag}</span> ${text};
+logBox.prepend(entry);
+}
+</script>
